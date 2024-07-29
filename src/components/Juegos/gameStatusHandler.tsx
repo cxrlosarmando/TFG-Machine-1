@@ -1,9 +1,14 @@
+// DetalleProveedores.js (o tu archivo correspondiente)
+
 import React, { useEffect, useState } from "react";
 import getJuegos from "@/controllers/juegos/getJuegos";
 import DataTable from "react-data-table-component";
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import Image from 'next/image';
+import socketIOClient from 'socket.io-client';
+
+const ENDPOINT = 'http://localhost:3001'; // Reemplaza con la URL de tu servidor Socket.IO
 
 export default function DetalleProveedores() {
   const [games, setGames] = useState<any[]>([]);
@@ -12,6 +17,35 @@ export default function DetalleProveedores() {
 
   useEffect(() => {
     fetchGames();
+
+    // Conectar al servidor Socket.IO
+    const socket = socketIOClient(ENDPOINT);
+
+    // Escuchar eventos desde el servidor para cambios genéricos
+    socket.on('checkboxChange', (updatedGame) => {
+      console.log('Estado actualizado en tiempo real:', updatedGame);
+      updateGameStatus(updatedGame);
+    });
+
+    // Escuchar eventos específicos para proveedor 68
+    socket.on('checkboxChange', (updatedGame) => {
+      if (updatedGame.id === 68) {
+        console.log('Estado actualizado para proveedor 68:', updatedGame);
+        updateGameStatus(updatedGame);
+      }
+    });
+
+    // Escuchar eventos específicos para proveedor 29
+    socket.on('checkboxChange', (updatedGame) => {
+      if (updatedGame.id === 29) {
+        console.log('Estado actualizado para proveedor 29:', updatedGame);
+        updateGameStatus(updatedGame);
+      }
+    });
+
+    return () => {
+      socket.disconnect(); // Desconectar el socket al desmontar el componente
+    };
   }, []);
 
   const fetchGames = async () => {
@@ -27,7 +61,7 @@ export default function DetalleProveedores() {
               provider: game.provider_name,
               category: game.category,
               image: game.image,
-              status: game.status === 1, // Convertir a booleano
+              status: game.status === 1, // Asegúrate de que status sea un booleano
             });
           });
         });
@@ -47,7 +81,7 @@ export default function DetalleProveedores() {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ status: currentStatus === 0 ? 1 : 0 }), // Cambiar el estado opuesto al actual
+        body: JSON.stringify({ status: currentStatus === 0 ? 1 : 0 }),
       });
       if (!response.ok) {
         throw new Error(`Error updating game ${gameId}: ${response.statusText}`);
@@ -59,16 +93,7 @@ export default function DetalleProveedores() {
       } else {
         toast.error(`Juego desactivado exitosamente`);
       }
-      const updatedGames = games.map((game) => {
-        if (game.id === gameId) {
-          return {
-            ...game,
-            status: currentStatus === 0 ? 1 : 0,
-          };
-        }
-        return game;
-      });
-      setGames(updatedGames);
+      updateGameStatus(responseData); // Actualizar estado después de la respuesta del servidor
     } catch (error) {
       console.error(`Hubo un error al actualizar estado para el juego ${gameId}:`, error);
       toast.error(`Error al actualizar estado para el juego ${gameId}`);
@@ -96,16 +121,7 @@ export default function DetalleProveedores() {
           } else {
             toast.error(`Juego desactivado globalmente exitosamente`);
           }
-          const updatedGames = games.map((gameItem) => {
-            if (gameItem.id === game.id) {
-              return {
-                ...gameItem,
-                status: !selectAll ? 1 : 0,
-              };
-            }
-            return gameItem;
-          });
-          setGames(updatedGames);
+          updateGameStatus(responseData); // Actualizar estado después de la respuesta del servidor
         } catch (error) {
           console.error(`Hubo un error al actualizar estado para el juego ${game.id}:`, error);
           toast.error(`Error al actualizar estado para el juego ${game.name}`);
@@ -117,6 +133,19 @@ export default function DetalleProveedores() {
       console.error("Hubo un error al actualizar estado global:", error);
       toast.error("Error al actualizar estado global");
     }
+  };
+
+  const updateGameStatus = (updatedGame: any) => {
+    const updatedGames = games.map((game) => {
+      if (game.id === updatedGame.id) {
+        return {
+          ...game,
+          status: updatedGame.status === 1, // Asegúrate de que status sea un booleano
+        };
+      }
+      return game;
+    });
+    setGames(updatedGames);
   };
 
   const filteredGames = games.filter((game) =>
@@ -164,7 +193,7 @@ export default function DetalleProveedores() {
     {
       name: "Imagen",
       cell: (row: any) => (
-        <Image src={row.image} alt={row.name} className="w-16 h-16 object-cover"width={500} height={500} />
+        <Image src={row.image} alt={row.name} className="w-16 h-16 object-cover" width={500} height={500} />
       ),
       ignoreRowClick: true,
       allowOverflow: true,

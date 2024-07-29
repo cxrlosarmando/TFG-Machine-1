@@ -2,49 +2,61 @@ import { createServer } from 'http';
 import { Server } from 'socket.io';
 
 let count = 0;
-let gameStates = {}; // Objeto para almacenar el estado de cada juego
+let gameStates = {};
 
 let httpServer = createServer();
 const io = new Server(httpServer, {
     cors: {
-        origin: 'http://localhost:3000'
+        origin: 'http://localhost:3000'  // Ajusta el origen según donde esté alojado tu cliente React
     }
 });
 
 io.on('connection', (socket) => {
     count++;
     console.log("connected: ", count);
+
+    // Emitir el conteo inicial y notificar a todos los clientes conectados
+    io.emit("count", count);
+
+    // Manejar desconexiones
     socket.on('disconnect', () => {
         count--;
         console.log("disconnected: ", count);
-        socket.emit("count", count);
-        socket.broadcast.emit("count", count);
+        io.emit("count", count);  // Notificar a todos los clientes sobre el cambio en el conteo
     });
-    socket.emit("count", count);
-    socket.broadcast.emit("count", count);
 
+    // Escuchar cambios de estado de checkbox genéricos
     socket.on("checkboxChange", ({ id, isChecked }) => {
         console.log(`Received checkboxChange event for game ${id} with isChecked: ${isChecked}`);
-        // Actualizar el estado del juego con el nuevo valor del checkbox
         gameStates[id] = isChecked;
-        console.log("isChecked: ", gameStates);
-        socket.broadcast.emit("checkboxChange", { id, isChecked });
+        console.log("Game states:", gameStates);
+        io.emit("checkboxChange", { id, isChecked });  // Emitir el cambio a todos los clientes conectados
     });
 
-    // Manejar el evento de cambio de checkbox específicamente para el proveedor 68
+    // Manejar eventos específicos para el proveedor 68
     socket.on("checkboxChange68", ({ id, isChecked }) => {
         console.log(`Received checkboxChange event for game ${id} with isChecked: ${isChecked}`);
         if (id === 68) {
-          // Actualizar el estado del juego 68 con el nuevo valor del checkbox
-          gameStates[id] = isChecked;
-          console.log("isChecked:", gameStates);
-          socket.broadcast.emit("checkboxChange", { id, isChecked });
+            gameStates[id] = isChecked;
+            console.log("Game states:", gameStates);
+            io.emit("checkboxChange", { id, isChecked });  // Emitir el cambio a todos los clientes conectados
         }
     });
 
-    // Enviar el estado actual de todos los juegos cuando un nuevo cliente se conecta
+    // Manejar eventos específicos para el proveedor 29
+    socket.on("checkboxChange29", ({ id, isChecked }) => {
+        console.log(`Received checkboxChange event for game ${id} with isChecked: ${isChecked}`);
+        if (id === 29) {
+            gameStates[id] = isChecked;
+            console.log("Game states:", gameStates);
+            io.emit("checkboxChange", { id, isChecked });  // Emitir el cambio a todos los clientes conectados
+        }
+    });
+
+    // Enviar el estado inicial de todos los juegos al cliente que se conecta
     socket.emit("initialGameStates", gameStates);
 });
 
-httpServer.listen(3001);
-console.log("listening port 3001");
+httpServer.listen(3001, () => {
+    console.log("Listening on port 3001");
+});
