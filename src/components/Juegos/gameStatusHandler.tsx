@@ -4,33 +4,19 @@ import DataTable from "react-data-table-component";
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import Image from 'next/image';
-import socketIOClient from 'socket.io-client';
 
-const ENDPOINT = 'http://localhost:3001';
+
+
 
 export default function DetalleProveedores() {
   const [games, setGames] = useState<any[]>([]);
   const [searchTerm, setSearchTerm] = useState<string>("");
   const [selectAll, setSelectAll] = useState<boolean>(false);
-  const [socket, setSocket] = useState<any>(null);
+  
 
   useEffect(() => {
-    const socket = socketIOClient(ENDPOINT);
-    setSocket(socket);
-
     fetchGames();
-
-
-
-    socket.on('checkboxChange', (updatedGame) => {
-      console.log('Estado actualizado en tiempo real:', updatedGame);
-      updateGameStatus(updatedGame);
     });
-
-    return () => {
-      socket.disconnect();
-    };
-  }, [games]);
 
   const fetchGames = async () => {
     // console.log('Fetching games...');
@@ -76,9 +62,7 @@ export default function DetalleProveedores() {
       } else {
         toast.success(`Juego activado exitosamente`);
       }
-      if (socket) {
-        socket.emit('changeGameStatus', responseData);
-      }
+      
       updateGameStatus(responseData);
     } catch (error) {
       console.error(`Hubo un error al actualizar estado para el juego ${gameId}:`, error);
@@ -107,9 +91,7 @@ export default function DetalleProveedores() {
           } else {
             toast.error(`Juego desactivado globalmente exitosamente`);
           }
-          if (socket) {
-            socket.emit('changeGameStatus', responseData);
-          }
+          
           updateGameStatus(responseData);
         } catch (error) {
           console.error(`Hubo un error al actualizar estado para el juego ${game.id}:`, error);
