@@ -1,5 +1,3 @@
-// DetalleProveedores.js (o tu archivo correspondiente)
-
 import React, { useEffect, useState } from "react";
 import getJuegos from "@/controllers/juegos/getJuegos";
 import DataTable from "react-data-table-component";
@@ -8,63 +6,48 @@ import 'react-toastify/dist/ReactToastify.css';
 import Image from 'next/image';
 import socketIOClient from 'socket.io-client';
 
-const ENDPOINT = 'http://localhost:3001'; // Reemplaza con la URL de tu servidor Socket.IO
+const ENDPOINT = 'http://localhost:3001';
 
 export default function DetalleProveedores() {
   const [games, setGames] = useState<any[]>([]);
   const [searchTerm, setSearchTerm] = useState<string>("");
   const [selectAll, setSelectAll] = useState<boolean>(false);
+  const [socket, setSocket] = useState<any>(null);
 
   useEffect(() => {
+    const socket = socketIOClient(ENDPOINT);
+    setSocket(socket);
+
     fetchGames();
 
-    // Conectar al servidor Socket.IO
-    const socket = socketIOClient(ENDPOINT);
 
-    // Escuchar eventos desde el servidor para cambios genéricos
+
     socket.on('checkboxChange', (updatedGame) => {
       console.log('Estado actualizado en tiempo real:', updatedGame);
       updateGameStatus(updatedGame);
     });
 
-    // Escuchar eventos específicos para proveedor 68
-    socket.on('checkboxChange', (updatedGame) => {
-      if (updatedGame.id === 68) {
-        console.log('Estado actualizado para proveedor 68:', updatedGame);
-        updateGameStatus(updatedGame);
-      }
-    });
-
-    // Escuchar eventos específicos para proveedor 29
-    socket.on('checkboxChange', (updatedGame) => {
-      if (updatedGame.id === 29) {
-        console.log('Estado actualizado para proveedor 29:', updatedGame);
-        updateGameStatus(updatedGame);
-      }
-    });
-
     return () => {
-      socket.disconnect(); // Desconectar el socket al desmontar el componente
+      socket.disconnect();
     };
-  }, []);
+  }, [games]);
 
   const fetchGames = async () => {
+    // console.log('Fetching games...');
     try {
       const gamesData = await getJuegos("", 1);
+      // console.log('Games data fetched:', gamesData);
       if (gamesData && gamesData.length > 0) {
-        let updatedGames: any[] = [];
-        gamesData.forEach((gameData: any) => {
-          gameData.games.forEach((game: any) => {
-            updatedGames.push({
-              id: game.id,
-              name: game.name,
-              provider: game.provider_name,
-              category: game.category,
-              image: game.image,
-              status: game.status === 1, // Asegúrate de que status sea un booleano
-            });
-          });
-        });
+        const updatedGames = gamesData.flatMap((gameData: any) =>
+          gameData.games.map((game: any) => ({
+            id: game.id,
+            name: game.name,
+            provider: game.provider_name,
+            category: game.category,
+            image: game.image,
+            status: game.status === 1,
+          }))
+        );
         setGames(updatedGames);
       } else {
         setGames([]);
@@ -74,26 +57,29 @@ export default function DetalleProveedores() {
     }
   };
 
-  const handleRowSelect = async (gameId: number, currentStatus: number) => {
+  const handleRowSelect = async (gameId: number, currentStatus: boolean) => {
     try {
       const response = await fetch(`/api/juegosApi/${gameId}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ status: currentStatus === 0 ? 1 : 0 }),
+        body: JSON.stringify({ status: currentStatus ? 0 : 1 }), // Cambia el estado correctamente
       });
       if (!response.ok) {
         throw new Error(`Error updating game ${gameId}: ${response.statusText}`);
       }
       const responseData = await response.json();
       console.log(`Update response for game ${gameId}:`, responseData);
-      if (currentStatus === 0) {
-        toast.success(`Juego activado exitosamente`);
+      if (currentStatus) {
+        toast.success(`Juego desactivado exitosamente`);
       } else {
-        toast.error(`Juego desactivado exitosamente`);
+        toast.success(`Juego activado exitosamente`);
       }
-      updateGameStatus(responseData); // Actualizar estado después de la respuesta del servidor
+      if (socket) {
+        socket.emit('changeGameStatus', responseData);
+      }
+      updateGameStatus(responseData);
     } catch (error) {
       console.error(`Hubo un error al actualizar estado para el juego ${gameId}:`, error);
       toast.error(`Error al actualizar estado para el juego ${gameId}`);
@@ -121,7 +107,10 @@ export default function DetalleProveedores() {
           } else {
             toast.error(`Juego desactivado globalmente exitosamente`);
           }
-          updateGameStatus(responseData); // Actualizar estado después de la respuesta del servidor
+          if (socket) {
+            socket.emit('changeGameStatus', responseData);
+          }
+          updateGameStatus(responseData);
         } catch (error) {
           console.error(`Hubo un error al actualizar estado para el juego ${game.id}:`, error);
           toast.error(`Error al actualizar estado para el juego ${game.name}`);
@@ -136,19 +125,18 @@ export default function DetalleProveedores() {
   };
 
   const updateGameStatus = (updatedGame: any) => {
-    const updatedGames = games.map((game) => {
-      if (game.id === updatedGame.id) {
-        return {
-          ...game,
-          status: updatedGame.status === 1, // Asegúrate de que status sea un booleano
-        };
-      }
-      return game;
-    });
-    setGames(updatedGames);
+    console.log('Estado previo:', games);
+    setGames(prevGames =>
+      prevGames.map(game =>
+        game.id === updatedGame.id
+          ? { ...game, status: updatedGame.status === 1 }
+          : game
+      )
+    );
+    console.log('Estado actualizado:', games);
   };
 
-  const filteredGames = games.filter((game) =>
+  const filteredGames = games.filter(game =>
     game.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     game.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
     game.provider.toLowerCase().includes(searchTerm.toLowerCase())
@@ -170,7 +158,7 @@ export default function DetalleProveedores() {
         <input
           type="checkbox"
           checked={row.status}
-          onChange={() => handleRowSelect(row.id, row.status ? 1 : 0)}
+          onChange={() => handleRowSelect(row.id, row.status)}
         />
       ),
       ignoreRowClick: true,
