@@ -10,12 +10,21 @@ interface GameUrlProps {
 const GameUrl: React.FC<GameUrlProps> = ({ game, token, onClose }) => {
   const [showVideo, setShowVideo] = useState(false);
   const [gameUrl, setGameUrl] = useState<string | null>(null);
+  const [idMachine, setIdMachine] = useState<string | null>(null);
 
   useEffect(() => {
+    // Extract idMachine from URL
+    const params = new URLSearchParams(window.location.search);
+    const idMachineParam = params.get('idMachine');
+    setIdMachine(idMachineParam);
+
     const fetchGameUrl = async () => {
+      if (!idMachine) return;
+
       try {
-        const url = `https://aggregator.casinoenruta.com/api/game?SessionToken=${token}&client_secret=9ffcfd63-e809-451c-9651-955c0622709d&user=1&username=usertest&balance=0&country=CL&currency=CLP&game=${game.id}&return_url=https://google.com&language=es_ES&mobile=false`;
+        const url = `https://aggregator.casinoenruta.com/api/game?SessionToken=${token}&client_secret=9ffcfd63-e809-451c-9651-955c0622709d&user=${idMachine}&username=${idMachine}&balance=0&country=CL&currency=CLP&game=${game.id}&return_url=https://google.com&language=es_ES&mobile=false`;
         console.log("AQUI game URL:", url);
+
 
         const response = await fetch(url);
         if (response.ok) {
@@ -37,7 +46,7 @@ const GameUrl: React.FC<GameUrlProps> = ({ game, token, onClose }) => {
     if (game) {
       fetchGameUrl();
     }
-  }, [game, token]);
+  }, [game, token, idMachine]);
 
   const closeGame = () => {
     onClose();
@@ -65,7 +74,7 @@ const GameUrl: React.FC<GameUrlProps> = ({ game, token, onClose }) => {
             </button>
             <iframe
               title="Play Demo"
-              src={gameUrl}
+              src={gameUrl || ""}
               className="fullscreen-video"
               allowFullScreen
             ></iframe>

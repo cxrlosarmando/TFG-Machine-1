@@ -29,7 +29,7 @@ const MaquinasTable: React.FC<MaquinasTableProps> = ({ maquinas }) => {
   const [transferData, setTransferData] = useState<TransactionData[]>([]);
 
   useEffect(() => {
-    fetch('/api/transfer')
+    fetch('/api/v1')
       .then(response => response.json())
       .then(data => {
         console.log('API response:', data);

@@ -5,21 +5,20 @@ interface Provider {
   provider: number;
   provider_name: string;
   status: number;
-  user: Types.ObjectId;
+  // user: Types.ObjectId;
 }
 
 // Define el esquema para el proveedor
-const providerSchema = new Schema<Provider>({
+const ProvidersSchema = new Schema<Provider>({
   provider: { type: Number, required: true },
   provider_name: { type: String, required: true },
-  status: { type: Number, required: true },
-  user: { type: Schema.Types.ObjectId, ref: "User" }
-},
-{
+  status: { type: Number, default: 0 },
+  // user: { type: Schema.Types.ObjectId, ref: "User" }
+}, {
   timestamps: true // Opcional: agrega campos de fecha de creación y actualización automáticamente
 });
 
-// Define el modelo Provider basado en el esquema
-const ProviderModel = mongoose.models.Provider || model<Provider>('Provider', providerSchema);
+// Define el modelo, asegurando que el nombre del modelo es correcto
+const Providers = mongoose.models.Providers || model<Provider>("Providers", ProvidersSchema);
 
-export default ProviderModel;
+export default Providers;

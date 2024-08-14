@@ -15,7 +15,7 @@ const EditTransaction: React.FC<{ transaction: any }> = ({ transaction }) => {
 
   useEffect(() => {
     // Fetch the latest transactions from the API
-    fetch('/api/transfer')
+    fetch('/api/v1')
       .then(response => response.json())
       .then(data => {
         console.log('API response:', data);
@@ -51,7 +51,7 @@ const EditTransaction: React.FC<{ transaction: any }> = ({ transaction }) => {
     };
 
     try {
-      const response = await fetch(`/api/transfer`, {
+      const response = await fetch(`/api/v1`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
