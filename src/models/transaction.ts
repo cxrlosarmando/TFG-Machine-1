@@ -13,7 +13,7 @@ interface Transaction extends Document {
   type?: number;
   provider?: number;
   status?: number;
-  // id_machine?: string;
+  id_machine: string;
   balance?: number;
   message?: string;
   debit?: number;
@@ -33,14 +33,14 @@ function truncateToDecimals(value: number, decimals: number): number {
 
 // Esquema de transacción
 const TransactionSchema = new Schema<Transaction>({
+  id_machine: { type: String, required: true },
   status: { type: Number, default: 1 },
-  // id_machine: { type: String, required: true },
   currency: { type: [String], required: false },
   extra_data: { type: [Schema.Types.Mixed], default: [] },
   balance: {
     type: Number,
-    default: 0, // Asegurar que balance tenga un valor predeterminado
-    get: (value: number) => parseFloat(value?.toFixed(2) || '0.00'), // Manejar undefined
+    default: 0,
+    get: (value: number) => parseFloat(value?.toFixed(2) || '0.00'),
     set: (value: number) => truncateToDecimals(value, 2),
   },
   message: { type: String, required: false },
@@ -52,7 +52,7 @@ const TransactionSchema = new Schema<Transaction>({
   debit: { type: Number, required: false },
   credit: { type: Number, required: false },
   transaction: { type: Number, required: false },
-  user: { type: String, required: false },
+  user: { type: String, required: true },
   amount: { type: Number, required: false },
   round: { type: Number, required: false },
   game: { type: Number, required: false },
@@ -62,19 +62,17 @@ const TransactionSchema = new Schema<Transaction>({
 
 // Middleware para actualizar el balance antes de guardar
 TransactionSchema.pre('save', async function (next) {
-  // Asegúrate de que la acción sea válida y de que los campos credit/debit se asignen correctamente
   if (this.action === 'CREDIT') {
-    this.credit = this.amount || 0;  // Asigna el valor de credit basado en el monto si la acción es CREDIT
-    this.debit = 0; // Asegúrate de que debit sea 0
+    this.credit = this.amount || 0;
+    this.debit = 0;
   } else if (this.action === 'DEBIT') {
-    this.debit = this.amount || 0;  // Asigna el valor de debit basado en el monto si la acción es DEBIT
-    this.credit = 0; // Asegúrate de que credit sea 0
+    this.debit = this.amount || 0;
+    this.credit = 0;
   } else if (this.action === 'BALANCE') {
     this.credit = 0;
-    this.debit = 0; // Para acciones de balance, ambos deben ser 0
+    this.debit = 0;
   }
 
-  // Actualiza el balance como antes
   if (this.isNew) {
     try {
       const lastTransaction = await this.constructor.findOne({ id_machine: this.id_machine }).sort({ transaction: -1 });
@@ -97,7 +95,6 @@ TransactionSchema.pre('save', async function (next) {
 
   next();
 });
-
 
 // Método estático para formatear balance
 TransactionSchema.statics.formatBalance = function (balance: number): string {
