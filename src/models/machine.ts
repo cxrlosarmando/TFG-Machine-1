@@ -12,7 +12,7 @@ interface Machine extends Document {
   providers: any[];
   token: string;
   // balance?: number; 
-  LogedIn : boolean;
+  // LogedIn : boolean;
 }
 
 // Definición del esquema de la máquina
@@ -25,7 +25,7 @@ const MachineSchema = new Schema<Machine>({
   room: { type: Schema.Types.ObjectId, ref: 'Room' },
   providers: { type: [{ type: Schema.Types.Mixed }], default: [] }, // Array de tipo any[] similar a games
   token: { type: String, default: generateUUID }, // Añade un token único para cada documento
-  LogedIn: { type: Boolean, default: false },  // Campo para identificar si la maquina está logueada o no. Por defecto, es falso.  // Añade un token único para cada documento
+  // LogedIn: { type: Boolean, default: false },  // Campo para identificar si la maquina está logueada o no. Por defecto, es falso.  // Añade un token único para cada documento
   // balance: { type: Number, default: 0 }, 
 }, {
   timestamps: true,

@@ -4,7 +4,6 @@ import Client from "@/models/client";
 import NextAuth from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
-import Machine from "@/models/machine";
 
 
 
@@ -49,26 +48,29 @@ const machineProvider = CredentialsProvider({
   },
   async authorize(credentials) {
     await connectDB();
-    const machineFound = await Machine.findOne({
+    
+    const machine = await Machine.findOne({
       id_machine: credentials?.id_machine,
     }).select("+password");
-
-    if (!machineFound) throw new Error("Invalid credentials");
+    
+    if (!machine) throw new Error("Invalid credentials");
 
     const passwordMatch = await bcrypt.compare(
       credentials!.password,
-      machineFound.password
+      machine.password
     );
-
+    
     if (!passwordMatch) throw new Error("Invalid credentials");
 
-    // Actualizar el campo LogedIn a true
-    machineFound.LogedIn = true;
-    await machineFound.save();
+    // Verificar si la máquina ya está logueada
+    if (machine.LogedIn) throw new Error("Machine already logged in");
+
+    // Marcar la máquina como logueada
+    await Machine.updateOne({ id_machine: credentials.id_machine }, { LogedIn: true });
 
     return {
-      ...machineFound.toObject(),
-      name: machineFound.id_machine
+      ...machine.toObject(),
+      name: machine.id_machine // Asegúrate de que el modelo de máquina tenga el campo 'id_machine'
     };
   },
 });
