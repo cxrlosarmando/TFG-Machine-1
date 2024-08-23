@@ -1,32 +1,44 @@
-import { NextResponse } from "next/server";
-import { connectDB } from "@/libs/mongodb";
-// import Machine from "@/models/machine";
-import Transaction from "@/models/transaction";
+import { NextResponse } from 'next/server';
+import { connectDB } from '@/libs/mongodb';
+import Transaction from '@/models/transaction';
 
-//GET A ONE TRANSACTION
-export async function GET(request: any, { params: { id } }: any) {
-    try {
-      //conetar a BD
-      await connectDB();
-      //get data using model
-      const transaction = await Transaction.findOne({ _id: id });
-      return NextResponse.json(
-        {
-          message: "Ok",
-          data: transaction,
-        },
-        { status: 200 }
-      );
-    } catch (error) {
-      return NextResponse.json(
-        {
-          message: "Failed to fecth a Machine",
-          error,
-        },
-        {
-          status: 500,
+// GET Balance for a specific machine (by user ID)
+export async function GET(request: Request, { params }: { params: { id: string } }) {
+  try {
+    await connectDB();
+    
+    const { id } = params;
+    
+    // Buscar las transacciones para el usuario específico
+    const transactions = await Transaction.find({ user: id }).sort({ transaction: -1 });
+
+    // Si no hay transacciones, devolver balance 0
+    if (transactions.length === 0) {
+      return NextResponse.json({
+        status: 'OK',
+        code: 200,
+        data: {
+          user: id,
+          balance: 0
         }
-      );
+      });
     }
-  }
 
+    // Tomar la última transacción para obtener el balance
+    const lastTransaction = transactions[0];
+
+    return NextResponse.json({
+      status: 'OK',
+      code: 200,
+      data: {
+      //  user: lastTransaction.user,
+        balance: lastTransaction.balance
+      }
+    });
+  } catch (error) {
+    return NextResponse.json({
+      status: 'Failed to get transactions',
+      error: error.message,
+    }, { status: 500 });
+  }
+}

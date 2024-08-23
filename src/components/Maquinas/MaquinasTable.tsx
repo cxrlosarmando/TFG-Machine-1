@@ -3,19 +3,18 @@ import React, { useState, useEffect } from "react";
 import DataTable from 'react-data-table-component';
 import { FaPen } from "react-icons/fa";
 import Link from "next/link";
-
 import { FaMoneyBill } from "react-icons/fa6";
 
 interface MaquinaData {
   _id: string;
   id_machine: string;
   status: number;
-  balance?: number; 
+  balance?: number;
 }
 
 interface TransactionData {
   _id: string;
-  id_machine: string;
+  user: string; // Cambiado de `id_machine` a `user`
   balance: number;
 }
 
@@ -25,14 +24,14 @@ interface MaquinasTableProps {
 
 const MaquinasTable: React.FC<MaquinasTableProps> = ({ maquinas }) => {
   const [searchTerm, setSearchTerm] = useState('');
-  const [dataLoaded, setDataLoaded] = useState(false);
+  const [dataLoaded, setDataLoaded] = useState(true);
   const [transferData, setTransferData] = useState<TransactionData[]>([]);
 
   useEffect(() => {
     fetch('/api/v1')
       .then(response => response.json())
       .then(data => {
-        console.log('API response:', data);
+        // console.log('todos los balances:', data);
   
         let transferDataArray = [];
   
@@ -44,10 +43,6 @@ const MaquinasTable: React.FC<MaquinasTableProps> = ({ maquinas }) => {
           throw new Error('Los datos recibidos de la API no están en el formato esperado.');
         }
   
-        const latestTransaction = transferDataArray.reduce((latest, current) => {
-          return current.transaction > latest.transaction ? current : latest;
-        }, transferDataArray[0]);
-  
         setTransferData(transferDataArray);
         setDataLoaded(true);
   
@@ -58,7 +53,7 @@ const MaquinasTable: React.FC<MaquinasTableProps> = ({ maquinas }) => {
   }, []);
   
   const getLatestBalanceByIdMachine = (id_machine: string): number | undefined => {
-    const transactions = transferData.filter(item => item.id_machine === id_machine);
+    const transactions = transferData.filter(item => item.user === id_machine); // Cambiado `id_machine` a `user`
     if (transactions.length > 0) {
       return transactions[transactions.length - 1].balance;
     }
@@ -73,15 +68,16 @@ const MaquinasTable: React.FC<MaquinasTableProps> = ({ maquinas }) => {
   }));
 
   const handleStatusChange = (id: string, newStatus: number) => {
-    console.log(`Cambiando estado de máquina ${id} a ${newStatus}`);
+    // console.log(`Cambiando estado de máquina ${id} a ${newStatus}`);
   };
 
-  // Función para obtener el _id de transferencia según id_machine
   const getTransferIdByMachineId = (id_machine: string): string | undefined => {
-  const transfer = transferData.find(item => item.id_machine === id_machine);
-  return transfer ? transfer._id : undefined;
-};
-
+    // console.log(`Buscando transfer para id_machine: ${id_machine}`);
+    const transfer = transferData.find(item => item.user === id_machine);
+    // console.log('Transfer encontrado:', transfer);
+    return transfer ? transfer.user : undefined;
+  };
+  
   const columns = [
     {
       name: 'Estado',
@@ -138,11 +134,10 @@ const MaquinasTable: React.FC<MaquinasTableProps> = ({ maquinas }) => {
         <div className="rounded-sm border border-stroke bg-white shadow-default dark:border-strokedark dark:bg-boxdark">
               <header className="border-b border-stroke py-4 px-6 dark:border-strokedark">
                 <h2 className="font-medium text-black dark:text-white">
-            Listado de Máquinas
-          </h2>
+                  Listado de Máquinas
+                </h2>
         </header>
         <div className="p-6">
-          {/* Agrega el campo de búsqueda */}
           <input
             type="text"
             placeholder="Buscar máquinas..."
@@ -150,7 +145,6 @@ const MaquinasTable: React.FC<MaquinasTableProps> = ({ maquinas }) => {
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
-          {/* Renderiza la DataTable con los datos filtrados */}
           <DataTable
             columns={columns}
             data={filteredMaquinas}

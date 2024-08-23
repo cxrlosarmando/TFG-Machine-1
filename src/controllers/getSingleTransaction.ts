@@ -2,7 +2,7 @@
 
 export default async function getSingleTransaction(id: any){
     try {
-        const response = await fetch(`http://localhost:3000/api/v1/${id}`,{
+        const response = await fetch(`/api/v1/${id}`,{
             cache: "no-store",
         });
         const transaction = await response.json();

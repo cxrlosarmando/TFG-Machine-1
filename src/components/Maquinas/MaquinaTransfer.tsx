@@ -6,52 +6,67 @@ import Breadcrumb from "@/components/Breadcrumbs/Breadcrumb";
 import DefaultLayout from "@/components/Layouts/DefaultLayout";
 
 const EditTransaction: React.FC<{ transaction: any }> = ({ transaction }) => {
-  const [newNombre, setNewNombre] = useState<string>(transaction.id_machine || '');
-  const [newCurrency, setNewCurrency] = useState<string>(transaction.currency || '');
+  const [newNombre, setNewNombre] = useState<string>(transaction?.user || '');
+  const [newCurrency, setNewCurrency] = useState<string>("CLP");
   const [newMessage, setNewMessage] = useState<string>('');
   const [action] = useState<string>('DEBIT');
-  const [balance, setNewBalance] = useState<number>(transaction.balance);
-  const [debit, setDebit] = useState<number>();
+  const [balance, setNewBalance] = useState<number>(transaction?.balance || 0);
+  const [amount, setAmount] = useState<number>(0);
+  const [idMachine, setIdMachine] = useState<string>("");
 
   useEffect(() => {
-    // Fetch the latest transactions from the API
-    fetch('/api/v1')
+    // Extract id_machine from the pathname
+    const pathname = window.location.pathname;
+    const urlParts = pathname.split("/");
+    const id = urlParts[urlParts.length - 1];
+    setIdMachine(id);
+
+    if (!id) {
+      console.error('No ID found in pathname.');
+      return;
+    }
+
+    // Fetch the balance and currency from the API
+    fetch(`/api/v1`)
       .then(response => response.json())
       .then(data => {
-        console.log('API response:', data);
-  
-        // Ensure data.data is an array and has at least one element
-        if (Array.isArray(data.data) && data.data.length > 0) {
-          // Find the latest transaction for the specific id_machine
-          const latestTransaction = data.data
-            .filter(item => item.id_machine === transaction.id_machine) // Filter by id_machine
-            .reduce((latest, current) => {
-              return current.transaction > latest.transaction ? current : latest;
-            });
-  
-          // Update the newBalance state with the balance of the latest transaction
-          setNewBalance(latestTransaction.balance);
+        console.log('API Response:', data); // Add this line to debug the response
+        if (data.status === 'OK') {
+          // Assuming data.data is an array of machine data
+          const machineData = data.data.find((item: any) => item.user === id);
+          if (machineData) {
+            setNewBalance(machineData.balance);
+            setNewCurrency(machineData.currency || 'Unknown');
+            setNewNombre(machineData.user); // Update the name based on API data
+          } else {
+            console.error('Machine data not found for ID:', id);
+          }
         } else {
-          throw new Error('API response data is not in the expected format or no data available.');
+          throw new Error('Error fetching transaction details.');
         }
       })
       .catch(error => console.error('Error fetching API:', error));
-  }, [transaction.id_machine]); // Include transaction.id_machine in dependency array to fetch when id_machine changes
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
+    if (!idMachine) {
+      console.error('ID Machine is missing.');
+      return;
+    }
+
     const transferData = {
       currency: newCurrency,
-      id_machine: newNombre,
+      id_machine: idMachine,
       balance,
       message: newMessage,
       action,
-      debit,
+      amount,
     };
 
     try {
-      const response = await fetch(`/api/v1`, {
+      const response = await fetch(`/api/debit/${idMachine}`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -87,7 +102,6 @@ const EditTransaction: React.FC<{ transaction: any }> = ({ transaction }) => {
                   ID Maquina
                 </label>
                 <input
-                  onChange={(e) => setNewNombre(e.target.value)}
                   value={newNombre}
                   id="newNombre"
                   name="newNombre"
@@ -106,7 +120,6 @@ const EditTransaction: React.FC<{ transaction: any }> = ({ transaction }) => {
                   Moneda
                 </label>
                 <input
-                  onChange={(e) => setNewCurrency(e.target.value)}
                   value={newCurrency}
                   id="currency"
                   name="currency"
@@ -125,31 +138,31 @@ const EditTransaction: React.FC<{ transaction: any }> = ({ transaction }) => {
                   Balance actual
                 </label>
                 <input
-                  onChange={(e) => setNewbalance(e.target.value)}
+                  onChange={(e) => setNewBalance(Number(e.target.value))}
                   value={balance}
                   id="balance"
                   name="balance"
                   type="text"
-                  placeholder="Balante actual"
+                  placeholder="Balance actual"
                   className="w-full rounded border-[1.5px] border-stroke bg-gray-800 text-gray-100 px-5 py-3 outline-none transition focus:border-primary active:border-primary"
                   readOnly
                   disabled
                 />
               </div>
             </div>
-            <h1 className="mb-6">TRANSACCION DEBITO</h1>
+            <h1 className="mb-6">TRANSACCIÓN DÉBITO</h1>
             <div className="mb-4">
               <label
-                htmlFor="debit"
+                htmlFor="amount"
                 className="mb-3 block text-sm font-medium text-black dark:text-white"
               >
                 Ingresa un monto <span className="text-red">*</span>
               </label>
               <input
-                onChange={(e) => setDebit(Number(e.target.value))}
-                value={debit}
-                id="debit"
-                name="debit"
+                onChange={(e) => setAmount(Number(e.target.value))}
+                value={amount}
+                id="amount"
+                name="amount"
                 type="number"
                 placeholder="$0.00"
                 className="w-full rounded border-[1.5px] border-stroke bg-gray-800 text-gray-100 px-5 py-3 outline-none transition focus:border-primary active:border-primary"
@@ -159,17 +172,17 @@ const EditTransaction: React.FC<{ transaction: any }> = ({ transaction }) => {
 
             <div className="mb-4">
               <label
-                htmlFor="debit"
+                htmlFor="message"
                 className="mb-3 block text-sm font-medium text-black dark:text-white"
               >
-             Mensaje
+                Mensaje
               </label>
               <input
                 onChange={(e) => setNewMessage(e.target.value)}
                 value={newMessage}
                 id="message"
                 name="message"
-                type="string"
+                type="text"
                 placeholder="Escribe un mensaje"
                 className="w-full rounded border-[1.5px] border-stroke bg-gray-800 text-gray-100 px-5 py-3 outline-none transition focus:border-primary active:border-primary"
               />

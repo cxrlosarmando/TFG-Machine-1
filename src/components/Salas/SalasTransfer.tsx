@@ -15,8 +15,8 @@ const EditarSala: React.FC<EditarSalaProps> = ({ sala }) => {
   const [selectedMachines, setSelectedMachines] = useState<string | undefined>(undefined);
   const [balance, setBalance] = useState<number>(0);
   const [newMessage, setNewMessage] = useState<string>('');
-  const [action, setAction] = useState<number>('BALANCE');
-  const [credit, setCredit] = useState<number>();
+  const [action, setAction] = useState<number>('CREDIT');
+  const [amount, setAmount] = useState<number>();
 
 
 
@@ -28,17 +28,16 @@ const EditarSala: React.FC<EditarSalaProps> = ({ sala }) => {
 
     const transferData = {
       currency: newCurrency,
-      id_machine: selectedMachines,
+      user: selectedMachines,
       balance,
       message: newMessage,
       action,
-      credit,
+      amount : amount,
     };
 
-    console.log("Datos a enviar:", transferData); // Verifica los datos antes de enviarlos
 
     try {
-      const response = await fetch(`/api/v1`, {
+      const response = await fetch(`/api/credit/${selectedMachines}`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -142,16 +141,16 @@ const EditarSala: React.FC<EditarSalaProps> = ({ sala }) => {
 
             <div className="mb-4">
               <label
-                htmlFor="credit"
+                htmlFor="amount"
                 className="mb-3 block text-sm font-medium text-black dark:text-white"
               >
                 Ingresa un monto <span className="text-red">*</span>
               </label>
               <input
-                onChange={(e) => setCredit(Number(e.target.value))}
-                value={credit}
-                id="credit"
-                name="credit"
+                onChange={(e) => setAmount(Number(e.target.value))}
+                value={amount}
+                id="amount"
+                name="amount"
                 type="number"
                 placeholder="$0.00"
                 className="w-full rounded border-[1.5px] border-stroke bg-gray-800 text-gray-100 px-5 py-3 outline-none transition focus:border-primary active:border-primary"
@@ -161,7 +160,7 @@ const EditarSala: React.FC<EditarSalaProps> = ({ sala }) => {
 
             <div className="mb-4">
               <label
-                htmlFor="credit"
+                htmlFor="amount"
                 className="mb-3 block text-sm font-medium text-black dark:text-white"
               >
              Mensaje

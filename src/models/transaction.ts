@@ -62,39 +62,45 @@ const TransactionSchema = new Schema<Transaction>({
 
 // Middleware para actualizar el balance antes de guardar
 TransactionSchema.pre('save', async function (next) {
-  if (this.action === 'CREDIT') {
-    this.credit = this.amount || 0;
-    this.debit = 0;
-  } else if (this.action === 'DEBIT') {
-    this.debit = this.amount || 0;
-    this.credit = 0;
-  } else if (this.action === 'BALANCE') {
-    this.credit = 0;
-    this.debit = 0;
-  }
+  try {
+    // Asegúrate de que la acción sea válida y de que los campos credit/debit se asignen correctamente
+    if (this.action === 'CREDIT') {
+      this.credit = this.amount || 0;  // Asigna el valor de credit basado en el monto si la acción es CREDIT
+      this.debit = 0; // Asegúrate de que debit sea 0
+    } else if (this.action === 'DEBIT') {
+      this.debit = this.amount || 0;  // Asigna el valor de debit basado en el monto si la acción es DEBIT
+      this.credit = 0; // Asegúrate de que credit sea 0
+    } else if (this.action === 'BALANCE') {
+      this.credit = 0;
+      this.debit = 0; // Para acciones de balance, ambos deben ser 0
+    }
 
-  if (this.isNew) {
-    try {
-      const lastTransaction = await this.constructor.findOne({ id_machine: this.id_machine }).sort({ transaction: -1 });
+    if (this.isNew) {
+      const lastTransaction = await this.constructor.findOne({ user: this.user }).sort({ transaction: -1 });
 
       if (lastTransaction) {
         this.transaction = (lastTransaction.transaction || 0) + 1;
         this.balance = (lastTransaction.balance || 0) + this.credit - this.debit;
       } else {
+        // Si no hay transacciones anteriores para este user, comienza desde cero
         this.transaction = 1;
-        this.balance = this.credit || 0;
+        this.balance = this.credit || 0; // Balance inicial es igual al crédito si no hay transacción previa
       }
-    } catch (error) {
-      return next(error);
+    } else {
+      // Actualización de una transacción existente
+      this.balance = (this.balance || 0) + this.credit - this.debit;
     }
-  } else {
-    this.balance = (this.balance || 0) + this.credit - this.debit;
+
+    // Trunca el balance a 2 decimales
+    this.balance = truncateToDecimals(this.balance, 2);
+    
+    next();
+  } catch (error) {
+    return next(error);
   }
-
-  this.balance = truncateToDecimals(this.balance, 2);
-
-  next();
 });
+
+
 
 // Método estático para formatear balance
 TransactionSchema.statics.formatBalance = function (balance: number): string {

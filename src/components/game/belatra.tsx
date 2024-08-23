@@ -78,11 +78,25 @@ const Belatra: React.FC = () => {
   return (
     <div className="belatra-container">
       <Swiper slidesPerView={1} spaceBetween={10} ref={swiperRef}>
-        {games.map((game, index) => (
-          <SwiperSlide key={index}>
-            <div className="game-card" onClick={() => handleGameClick(game)}>
-              <Image src={game.image} alt={game.name} width={500} height={500} />
-              <div className="game-name">{game.name}</div>
+      {[...Array(Math.ceil(games.length / 8))].map((_, pageIndex) => (
+          <SwiperSlide key={pageIndex}>
+            <div className="swiper-slide-content">
+              {(games.slice(pageIndex * 8, (pageIndex + 1) * 8)).map((game, index) => (
+                <div key={index} className="col-3 col-md-3">
+                  <div className="btn-game" onClick={() => handleGameClick(game)}>
+                    <Image
+                      src={game.image}
+                      alt={game.name}
+                      style={{width:'100%'}}
+                      width={500}
+                       height={500}
+                    />
+                    <div className="subtitle">
+                      {game.name}
+                    </div>
+                  </div>
+                </div>
+              ))}
             </div>
           </SwiperSlide>
         ))}

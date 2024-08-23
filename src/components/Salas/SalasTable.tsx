@@ -2,8 +2,10 @@ import React, { useEffect, useState } from "react";
 import DataTable from 'react-data-table-component';
 import { FaPen } from "react-icons/fa";
 import Link from "next/link";
-import DeleteButtonSalas from '@/components/Salas/DeleteButtonSalas'
+import DeleteButtonSalas from '@/components/Salas/DeleteButtonSalas';
 import { FaMoneyBillTransfer } from "react-icons/fa6";
+import { getSession } from "next-auth/react";
+import getRooms from '@/controllers/getRooms'; // Asegúrate de que esta función esté bien importada
 
 interface SalaData {
   _id: string;
@@ -11,26 +13,50 @@ interface SalaData {
   comuna: string;
   pais: string;
   status: number;
-  currency:string;
+  currency: string;
   address: string;
   phone: number;
+  client?: string; // Añade los campos opcionales para tipo de cliente
+  operator?: string[]; // Añade los campos opcionales para tipo de operador
 }
 
-interface SalasTableProps {
-  salas: SalaData[];
-}
+const ITEMS_PER_PAGE = 6;
 
-const SalasTable: React.FC<SalasTableProps> = ({ salas }) => {
+const SalasTable: React.FC = () => {
+  const [salas, setSalas] = useState<SalaData[]>([]);
+  const [userRole, setUserRole] = useState<string>('');
   const [searchTerm, setSearchTerm] = useState<string>('');
-  const [filteredSalas, setFilteredSalas] = useState<SalaData[]>(salas);
+  const [filteredSalas, setFilteredSalas] = useState<SalaData[]>([]);
 
   useEffect(() => {
-    setFilteredSalas(salas);
-  }, [salas]);
+    const fetchData = async () => {
+      try {
+        const session = await getSession();
+        if (session) {
+          setUserRole(session.user?.typeProfile || '');
+
+          // Obtener salas según el rol del usuario
+          const salasData = await getRooms("some-query", 1); // Ajusta la query y currentPage según sea necesario
+          setSalas(salasData);
+          setFilteredSalas(salasData);
+        }
+      } catch (error) {
+        console.error("Error al obtener datos de salas:", error);
+      }
+    };
+
+    fetchData();
+  }, []);
+
+  useEffect(() => {
+    // Filtrar salas basado en el término de búsqueda
+    const filteredData = salas.filter((sala) =>
+      sala.nombre.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+    setFilteredSalas(filteredData);
+  }, [searchTerm, salas]);
 
   const handleStatusChange = (id: string, newStatus: number) => {
-    // Aquí deberías implementar la lógica para cambiar el estado de la sala (row) con el ID proporcionado.
-    // No está claro cómo gestionar el estado de `salas` en tu implementación actual.
     console.log(`Cambiar estado de ${id} a ${newStatus}`);
   };
 
@@ -42,7 +68,6 @@ const SalasTable: React.FC<SalasTableProps> = ({ salas }) => {
           type="checkbox"
           checked={row.status === 1}
           className="form-checkbox h-5 w-5 text-green-500"
-
           onChange={() => handleStatusChange(row._id, row.status === 1 ? 0 : 1)}
         />
       ),
@@ -60,11 +85,6 @@ const SalasTable: React.FC<SalasTableProps> = ({ salas }) => {
       selector: (row: SalaData) => row.pais,
       sortable: true,
     },
-    // {
-    //   name: 'Comuna',
-    //   selector: (row: SalaData) => row.comuna,
-    //   sortable: true,
-    // },
     {
       name: 'Dirección',
       selector: (row: SalaData) => row.address,
@@ -109,10 +129,6 @@ const SalasTable: React.FC<SalasTableProps> = ({ salas }) => {
 
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchTerm(e.target.value);
-    const filteredData = salas.filter((sala) =>
-      sala.nombre.toLowerCase().includes(e.target.value.toLowerCase())
-    );
-    setFilteredSalas(filteredData);
   };
 
   return (
@@ -122,6 +138,14 @@ const SalasTable: React.FC<SalasTableProps> = ({ salas }) => {
           <h2 className="font-medium text-black dark:text-white">
             Listado de Salas
           </h2>
+          {userRole !== '660ebaa7b02ce973cad66552' && ( // Verifica si el rol no es 'Operador'
+            <Link
+              href="/dashboard/salas/crear"
+              className="btn btn-primary"
+            >
+              Crear Sala
+            </Link>
+          )}
         </header>
         <div className="p-6">
           <input
