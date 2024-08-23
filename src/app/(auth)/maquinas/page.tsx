@@ -66,29 +66,29 @@ async function handleSubmit(e: any) {
     } else {
       // Obtener información de la sala asociada a la máquina
       const roomInfo = await obtenerInformacionMaquina(info.id_machine);
-      console.log("Detalles de la sala obtenidos:", roomInfo); // Agrega este console.log para verificar los detalles de la sala obtenidos
+      console.log("Detalles de la sala obtenidos:", roomInfo);
 
       setTimeout(async () => {
         const result = await Swal.fire({
-            title: 'CONFIRMACIÓN DE DATOS',
-            html: `
-                <p><span class="bold-text" style="color: black;">MAQUINA:</span> ${info.id_machine}</p>
-                <p><span class="bold-text" style="color: black;">SALA:</span> ${roomInfo.nombre}</p>
-                <p><span class="bold-text" style="color: black;">COMUNA:</span> ${roomInfo.comuna}</p>
-                <p><span class="bold-text" style="color: black;">UBICACIÓN:</span> ${roomInfo.ciudad} / ${roomInfo.pais}</p>
-            `,
-            icon: 'success',
-            showCancelButton: true,
-            confirmButtonColor: 'rgb(227, 17, 108)',
-            cancelButtonColor: 'rgb(102, 102, 102)',
-            confirmButtonText: 'SÍ, ESTÁN CORRECTOS',
-            cancelButtonText: 'CANCELAR',
-            customClass: {
-                title: 'custom-title',
-                htmlContainer: 'custom-html',
-            },
+          title: 'CONFIRMACIÓN DE DATOS',
+          html: `
+            <p><span class="bold-text" style="color: black;">MAQUINA:</span> ${info.id_machine}</p>
+            <p><span class="bold-text" style="color: black;">SALA:</span> ${roomInfo.nombre}</p>
+            <p><span class="bold-text" style="color: black;">COMUNA:</span> ${roomInfo.comuna}</p>
+            <p><span class="bold-text" style="color: black;">UBICACIÓN:</span> ${roomInfo.ciudad} / ${roomInfo.pais}</p>
+          `,
+          icon: 'success',
+          showCancelButton: true,
+          confirmButtonColor: 'rgb(227, 17, 108)',
+          cancelButtonColor: 'rgb(102, 102, 102)',
+          confirmButtonText: 'SÍ, ESTÁN CORRECTOS',
+          cancelButtonText: 'CANCELAR',
+          customClass: {
+            title: 'custom-title',
+            htmlContainer: 'custom-html',
+          },
         });
-      
+
         if (result.isConfirmed) {
           router.replace(`/games/?idMachine=${info.id_machine}`);
         }

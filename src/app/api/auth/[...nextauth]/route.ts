@@ -4,6 +4,7 @@ import Client from "@/models/client";
 import NextAuth from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
+import Machine from "@/models/machine";
 
 
 
@@ -48,23 +49,26 @@ const machineProvider = CredentialsProvider({
   },
   async authorize(credentials) {
     await connectDB();
-    const userFound = await User.findOne({
+    const machineFound = await Machine.findOne({
       id_machine: credentials?.id_machine,
     }).select("+password");
 
-    if (!userFound) throw new Error("Invalid credentials");
+    if (!machineFound) throw new Error("Invalid credentials");
 
     const passwordMatch = await bcrypt.compare(
       credentials!.password,
-      userFound.password
+      machineFound.password
     );
 
     if (!passwordMatch) throw new Error("Invalid credentials");
 
-    // Agregar el campo 'nombreCompleto' al objeto de usuario devuelto
+    // Actualizar el campo LogedIn a true
+    machineFound.LogedIn = true;
+    await machineFound.save();
+
     return {
-      ...userFound.toObject(),
-      name: userFound.nombreCompleto // Asegúrate de que el modelo de usuario tenga el campo 'nombreCompleto'
+      ...machineFound.toObject(),
+      name: machineFound.id_machine
     };
   },
 });
