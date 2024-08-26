@@ -112,7 +112,9 @@ const Games: React.FC = () => {
       return balance.toFixed(2);
     }
   };
-
+  const formatBalanceWithoutDecimals = (balance: number) => {
+    return balance.toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+  };
   return (
     <div>
       {isLoading && <Loader />}
@@ -157,7 +159,7 @@ const Games: React.FC = () => {
   
           <div className="footer d-flex justify-content-center">
             <div className="bgcreditos">
-              <span className="credit">{selectedMachineBalance ? formatBalance(selectedMachineBalance.balance, selectedMachineBalance.currency) : '000'}</span>
+              <span className="credit">{selectedMachineBalance ? formatBalanceWithoutDecimals(selectedMachineBalance.balance) : '000'}</span>
               <span className="amount">{selectedMachineBalance ? `${selectedMachineBalance.currency || 'USD'} $${formatBalance(selectedMachineBalance.balance, selectedMachineBalance.currency)}` : 'USD $0.00'}</span>
             </div>
           </div>
