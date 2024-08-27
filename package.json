@@ -21,6 +21,7 @@
     "bcrypt": "^5.1.1",
     "bcryptjs": "^2.4.3",
     "bootstrap": "^5.3.3",
+    "express": "^4.19.2",
     "express-middleware": "^3.4.2",
     "fa6": "^2.0.1",
     "flatpickr": "^4.6.13",
@@ -45,6 +46,8 @@
     "react-select": "^5.8.0",
     "react-table": "^7.8.0",
     "react-toastify": "^10.0.5",
+    "socket.io": "^4.7.5",
+    "socket.io-client": "^4.7.5",
     "styled-components": "^6.1.11",
     "sweetalert2": "^11.11.0",
     "swiper": "^11.1.1",
@@ -53,9 +56,11 @@
   },
   "devDependencies": {
     "@types/bcryptjs": "^2.4.6",
-    "@types/node": "^20",
+    "@types/express": "^4.17.21",
+    "@types/node": "^20.16.1",
     "@types/react": "^18",
     "@types/react-dom": "^18",
+    "@types/socket.io": "^3.0.2",
     "@types/uuid": "^10.0.0",
     "autoprefixer": "^10.0.1",
     "eslint": "^8",
@@ -64,6 +69,6 @@
     "prettier": "^3.2.5",
     "prettier-plugin-tailwindcss": "^0.5.11",
     "tailwindcss": "^3.4.1",
-    "typescript": "^5"
+    "typescript": "^5.5.4"
   }
 }
